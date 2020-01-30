@@ -1,8 +1,15 @@
 import "lib/github.com/diku-dk/lys/lys"
 
-type text_content = (i32, f32, f32, f32, f32)
+type text_content = (i32, i32, f32, f32, f32, f32)
 module lys: lys with text_content = text_content = {
+
+  let grab_mouse = false
+  let header_height = 55i32
+
+  type kind = #feigen | #sincos f64
+
   type state = {h: i32, w: i32,      -- window height and width
+		kind: kind,
 		n0: i32,             -- warmup iterations
 		n: i32,              -- number of iterations
 		a_range: (f32, f32),
@@ -11,20 +18,42 @@ module lys: lys with text_content = text_content = {
                 paused: bool
                }
 
-  let grab_mouse = false
+  type^ sysdef 'p = {init: p, prj: p -> f64, next: f64 -> p -> p}
 
-  let init (_seed: u32) (h: i32) (w: i32): state =
+  let sysdef_feigen : sysdef f64 =
+    {init=0.25f64,prj=\x -> x, next=\a x -> a*x*(1.0-x)}
+
+  let sysdef_sincos (a0:f64) : sysdef (f64,f64) =
+    {init=(0.1f64,0.1f64),
+     prj=(.0),
+     next=\b (x,y) -> (f64.sin(x + a0*y),
+		       f64.cos(b*x + y))}
+
+  let init_feigen (h: i32) (w: i32) : state =
     {h,w,
+     kind=#feigen,
      n0=1000,
      n=10000,
-     a_range=(3.5,4.0),
+     a_range=(3.5f32, 4.0f32),
      x_range=(0.0,1.0),
      moving={zoom=0,horiz=0,vert=0},
-     paused = false
-    }
+     paused = false}
+
+  let init_sincos (h: i32) (w: i32) : state =
+    {h,w,
+     kind=#sincos 2.82,
+     n0=1000,
+     n=10000,
+     a_range=(0.0f32, 3.0f32),
+     x_range=(-1.0,1.0),
+     moving={zoom=0,horiz=0,vert=0},
+     paused = false}
+
+  let init (_seed: u32) (h: i32) (w: i32) : state =
+    init_feigen (h-header_height) w
 
   let resize (h: i32) (w: i32) (s: state) =
-    s with h = h with w = w
+    s with h = h-header_height with w = w
 
   let keydown (key: i32) (s: state) =
     if key == SDLK_RIGHT then s with moving.horiz = -1
@@ -34,6 +63,8 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_z then s with moving.zoom = 1
     else if key == SDLK_x then s with moving.zoom = -1
     else if key == SDLK_SPACE then s with paused = !s.paused
+    else if key == SDLK_1 then init_feigen s.h s.w
+    else if key == SDLK_2 then init_sincos s.h s.w
     else s
 
   let keyup (key: i32) (s: state) =
@@ -70,18 +101,19 @@ module lys: lys with text_content = text_content = {
     case #mouse _ -> s
     case #wheel _ -> s
 
-  let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
+  let gen_column0 'p {init: p, prj: p -> f64, next: f64 -> p -> p}
+                     (s:state) (h:i32) (v:i32) : [h]argb.colour =
     let a = f64.f32 s.a_range.0 + r64 v * f64.f32(s.a_range.1-s.a_range.0)/ r64 s.w
-    let next x = a * x * (1.0-x)
-    let x = loop x=0.25 for _i < s.n0 do next x
+    let nxt (x:p) : p = next a x
+    let x : p = loop x=init for _i < s.n0 do nxt x
     let counts = replicate h 0
     let nz = 0
     let hits = 1
     let (_,counts,nz,hits) =
       unsafe
       loop (x,counts,nz,hits) for _i < s.n do
-        let x' = next x
-	let i : i32 = i32.f64((x' - f64.f32 s.x_range.0)
+        let x' = nxt x
+	let i : i32 = i32.f64((prj x' - f64.f32 s.x_range.0)
 			      / f64.f32 (s.x_range.1-s.x_range.0) * r64 s.h)
 	let (counts,nz,hits) = if i >= s.h || i < 0 then (counts,nz,hits)
 			       else let nz = if counts[i] == 0 then nz + 1 else nz
@@ -99,19 +131,33 @@ module lys: lys with text_content = text_content = {
     in col
     |> reverse
 
+  let gen_column_feigen (s:state) (h:i32) (v:i32) : [h]argb.colour =
+    gen_column0 sysdef_feigen s h v
+
+  let gen_column_sincos (a0:f64) (s:state) (h:i32) (v:i32) : [h]argb.colour =
+    gen_column0 (sysdef_sincos a0) s h v
+
+  let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
+    match s.kind
+    case #feigen -> gen_column_feigen s h v
+    case #sincos a0 -> gen_column_sincos a0 s h v
+
   let render (s: state) =
-    map (\x -> gen_column s s.h x) (iota s.w)
+    map (\x -> replicate header_height argb.white ++ gen_column s s.h x) (iota s.w)
     |> transpose
 
   type text_content = text_content
 
   let text_format () =
-    "FPS: %d\nA-range: (%f, %f)\nX-range: (%f,%f)\nZoom: z/x\nMove: Arrows\nQuit: ESC"
+    "FPS: %d | Kind: %[Feigenbaum|SinCos] | A-range: (%f, %f) | X-range: (%f,%f)\nControls: z/x (zoom), arrows (move), 1,2 (kinds), esc (quit)"
 
   let text_content (render_duration: f32) (s: state): text_content =
-    (t32 render_duration,
-     s.a_range.0, s.a_range.1,
-     s.x_range.0, s.x_range.1)
+    let kind = match s.kind
+	       case #feigen -> 0
+	       case #sincos _ -> 1
+    in (t32 render_duration, kind,
+	s.a_range.0, s.a_range.1,
+	s.x_range.0, s.x_range.1)
 
-  let text_colour = const argb.blue
+  let text_colour = const argb.black
 }
