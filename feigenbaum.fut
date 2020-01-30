@@ -48,41 +48,49 @@ module lys: lys with text_content = text_content = {
   let event (e: event) (s: state) =
     match e
     case #step td ->
-      let norma (v:f32) : f32 = v * (s.a_range.1 - s.a_range.0) / 15.0f32
-      let normx (v:f32) : f32 = v * (s.x_range.1 - s.x_range.0) / 5.0f32
-      let ar = (s.a_range.0 + norma(td*r32(s.moving.horiz)),  -- move left/right
-		s.a_range.1 + norma(td*r32(s.moving.horiz)))
-      let ar2 = (ar.0 + norma(td*r32(s.moving.zoom)),         -- zoom horiz in/out
-		 ar.1 - norma(td*r32(s.moving.zoom)))
-      let xr = (s.x_range.0 + normx(td*r32(s.moving.vert)),   -- move up/down
-		s.x_range.1 + normx(td*r32(s.moving.vert)))
-      let xr2 = (xr.0 + normx(td*r32(s.moving.zoom)),         -- zoom vert in/out
-		 xr.1 + normx(td*r32(s.moving.zoom)))
-      in s with a_range = ar2
-           with x_range = xr2
+      let norma (v:f32) : f32 =
+	f32.f64(f64.f32 v * (f64.f32 s.a_range.1 - f64.f32 s.a_range.0) / 15.0)
+      let normx (v:f32) : f32 =
+	f32.f64(f64.f32 v * (f64.f32 s.x_range.1 - f64.f32 s.x_range.0) / 5.0)
+      let ar =                                     -- move left/right
+	let da = norma(td*r32(s.moving.horiz))
+	in (s.a_range.0 + da, s.a_range.1 + da)
+      let ar2 =                                    -- zoom horiz in/out
+	let da = norma(td*r32(s.moving.zoom))
+	in (ar.0 + da, ar.1 - da)
+	let xr =                                   -- move up/down
+	  let dx = normx(td*r32(s.moving.vert))
+	  in (s.x_range.0 + dx,	s.x_range.1 + dx)
+      let xr2 =                                    -- zoom vert in/out
+	let dx = normx(td*r32(s.moving.zoom))
+	in (xr.0 + dx, xr.1 - dx)
+      in s with a_range = ar2 with x_range = xr2
     case #keydown {key} -> keydown key s
     case #keyup {key} -> keyup key s
     case #mouse _ -> s
     case #wheel _ -> s
 
-  let gen_column (s:state) (v:i32) : []argb.colour =
+  let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
     let a = f64.f32 s.a_range.0 + r64 v * f64.f32(s.a_range.1-s.a_range.0)/ r64 s.w
-    let next x = a * x * (1.0f64-x)
-    let x = loop x=0.25f64 for _i < s.n0 do next x
-    let counts = replicate s.h 0
+    let next x = a * x * (1.0-x)
+    let x = loop x=0.25 for _i < s.n0 do next x
+    let counts = replicate h 0
     let nz = 0
-    let (_,counts,nz) =
+    let hits = 1
+    let (_,counts,nz,hits) =
       unsafe
-      loop (x,counts,nz) for _i < s.n do
+      loop (x,counts,nz,hits) for _i < s.n do
         let x' = next x
-	let i : i32 = i32.f64((x' - f64.f32 s.x_range.0) / f64.f32 (s.x_range.1-s.x_range.0) * r64 s.h)
-	let (counts,nz) = if i >= s.h || i < 0 then (counts,nz)
-			  else let nz = if counts[i] == 0 then nz + 1 else nz
-                               let counts[i] = counts[i] + 1
-  		               in (counts,nz)
-        in (x',counts,nz)
-    let cs = map (\c -> let c' = c * nz in if c' > s.n then s.n else c') counts
-    let fs = map (\c -> r32(c) / r32 s.n) cs
+	let i : i32 = i32.f64((x' - f64.f32 s.x_range.0)
+			      / f64.f32 (s.x_range.1-s.x_range.0) * r64 s.h)
+	let (counts,nz,hits) = if i >= s.h || i < 0 then (counts,nz,hits)
+			       else let nz = if counts[i] == 0 then nz + 1 else nz
+				    let hits = hits + 1
+				    let counts[i] = counts[i] + 1
+  				    in (counts,nz,hits)
+        in (x',counts,nz,hits)
+    let cs = map (\c -> let c' = c * nz in if c' > hits then hits else c') counts
+    let fs = map (\c -> r32 c / r32 hits) cs
     let col = map (\f ->
 		     let r = r32 v / r32 s.h
 		     let b = 1.0 - r
@@ -92,13 +100,13 @@ module lys: lys with text_content = text_content = {
     |> reverse
 
   let render (s: state) =
-    map (\x -> gen_column s x) (iota s.w)
+    map (\x -> gen_column s s.h x) (iota s.w)
     |> transpose
 
   type text_content = text_content
 
   let text_format () =
-    "FPS: %d\nA-range: (%f, %f)\nX-range: (%f,%f)\nZoom: z/x\nMove: Arrows"
+    "FPS: %d\nA-range: (%f, %f)\nX-range: (%f,%f)\nZoom: z/x\nMove: Arrows\nQuit: ESC"
 
   let text_content (render_duration: f32) (s: state): text_content =
     (t32 render_duration,
