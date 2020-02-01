@@ -7,11 +7,12 @@
 -- MIT License
 
 import "lib/github.com/diku-dk/lys/lys"
+import "interp"
 
 type text_content = (i32, i32, f32, f32, f32, f32, i32)
 module lys: lys with text_content = text_content = {
 
-  type kind = #feigen | #sincos f64 | #tent | #gauss f64 | #henon f64
+  type kind = #feigen | #sincos f64 | #tent | #gauss f64 | #henon f64 | #feigen_interp
 
   let pp_kind (k:kind) =
     match k
@@ -20,8 +21,9 @@ module lys: lys with text_content = text_content = {
     case #tent -> "Tent"
     case #gauss _ -> "Gauss"
     case #henon _ -> "Henon"
+    case #feigen_interp -> "Feigenbaum (Interp)"
 
-  let kinds_string = "[Feigenbaum|SinCos|Tent|Gauss|Henon]"
+  let kinds_string = "[Feigenbaum|SinCos|Tent|Gauss|Henon|Feigenbaum (Interp)]"
   let kind_idx_max : i32 = 4
   let kind_idx (k:kind) : i32 =
     match k
@@ -30,6 +32,7 @@ module lys: lys with text_content = text_content = {
     case #tent -> 2
     case #gauss _ -> 3
     case #henon _ -> 4
+    case #feigen_interp -> 5
 
   type^ sysdef 'p = {kind: kind,
                      init: p,
@@ -87,6 +90,23 @@ module lys: lys with text_content = text_content = {
      p_rng=(1.0, 1.45),
      x_rng=(-1.5, 1.5)}
 
+  let sysdef_feigen_interp : sysdef stmt.rfile =
+    {kind=#feigen_interp,
+     init=stmt.set (stmt.emp 0.0) stmt.ax 0.25,
+     prj=\rf -> stmt.get rf stmt.ax,
+     next=\a rf -> let ss = stmt.([#sto bx,       -- bx <- ax
+				   #f64 1.0,      -- ax <- 1.0
+				   #sub bx,       -- ax <- ax - bx
+				   #mul bx,       -- ax <- ax * bx
+				   #sto bx,       -- bx <- ax
+				   #f64 a,        -- ax <- a
+				   #mul bx        -- ax <- ax*bx
+				  ])
+		   in stmt.eval rf ss,
+     ns=(1000, 10000),
+     p_rng=(3.5, 4.0),
+     x_rng=(0.0, 1.0)}
+
   -- Internal stuff
 
   let grab_mouse = false
@@ -117,6 +137,7 @@ module lys: lys with text_content = text_content = {
   let init_tent   : i32 -> i32 -> state = mk_init sysdef_tent
   let init_gauss  : i32 -> i32 -> state = mk_init (sysdef_gauss 6.2)
   let init_henon  : i32 -> i32 -> state = mk_init (sysdef_henon 0.3)
+  let init_feigen_interp : i32 -> i32 -> state = mk_init sysdef_feigen_interp
 
   let init (_seed: u32) (h: i32) (w: i32) : state =
     init_feigen (h-header_height) w
@@ -137,6 +158,7 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_3 then init_tent s.h s.w
     else if key == SDLK_4 then init_gauss s.h s.w
     else if key == SDLK_5 then init_henon s.h s.w
+    else if key == SDLK_6 then init_feigen_interp s.h s.w
     else s
 
   let keyup (key: i32) (s: state) =
@@ -210,6 +232,7 @@ module lys: lys with text_content = text_content = {
     case #tent -> gen_column0 sysdef_tent s h v
     case #gauss a0 -> gen_column0 (sysdef_gauss a0) s h v
     case #henon b0 -> gen_column0 (sysdef_henon b0) s h v
+    case #feigen_interp -> gen_column0 sysdef_feigen_interp s h v
 
   let render (s: state) =
     map (\x -> (replicate header_height argb.white ++
