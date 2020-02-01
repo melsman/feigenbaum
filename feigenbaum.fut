@@ -92,7 +92,7 @@ module lys: lys with text_content = text_content = {
 
   let sysdef_feigen_interp : sysdef stmt.rfile =
     {kind=#feigen_interp,
-     init=stmt.set (stmt.emp 0.0) stmt.ax 0.25,
+     init=let rf = stmt.emp 0.0 in stmt.set rf stmt.ax 0.25,
      prj=\rf -> stmt.get rf stmt.ax,
      next=\a rf -> let ss = stmt.([#sto bx,       -- bx <- ax
 				   #f64 1.0,      -- ax <- 1.0

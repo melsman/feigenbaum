@@ -16,19 +16,19 @@ module type STMT = {
             | #ld  reg   --  ld r : ax <- r
 
   type rfile
-  val emp : f64 -> rfile
-  val set : rfile -> reg -> f64 -> rfile
+  val emp : f64 -> *rfile
+  val set : *rfile -> reg -> f64 -> *rfile
   val get : rfile -> reg -> f64
 
-  val eval [n] : rfile -> [n]stmt -> rfile
+  val eval [n] : *rfile -> [n]stmt -> *rfile
 }
 
 module stmt : STMT = {
-  type reg = #ax | #bx | #cx | #dx
-  let ax : reg = #ax
-  let bx : reg = #bx
-  let cx : reg = #cx
-  let dx : reg = #dx
+  type reg = i32
+  let ax : reg = 0
+  let bx : reg = 1
+  let cx : reg = 2
+  let dx : reg = 3
 
   type stmt = #f64 f64
             | #add reg   -- add r : ax <- ax + r
@@ -39,25 +39,17 @@ module stmt : STMT = {
             | #sto reg   -- sto r :  r <- ax
             | #ld  reg   --  ld r : ax <- r
 
-  type rfile = (f64,f64,f64,f64)
+  type rfile = [4]f64
 
-  let emp (v:f64) : rfile = (v,v,v,v)
+  let emp (v:f64) : *rfile = [v,v,v,v]
 
-  let set ((a,b,c,d):rfile) (r:reg) (v:f64) : rfile =
-    match r
-    case #ax -> (v,b,c,d)
-    case #bx -> (a,v,c,d)
-    case #cx -> (a,b,v,d)
-    case #dx -> (a,b,c,v)
+  let set (rf:*rfile) (r:reg) (v:f64) : *rfile =
+    let rf[r] = v in rf
 
-  let get ((a,b,c,d):rfile) (r:reg) : f64 =
-    match r
-    case #ax -> a
-    case #bx -> b
-    case #cx -> c
-    case #dx -> d
+  let get (rf:rfile) (r:reg) : f64 =
+    rf[r]
 
-  let ev (rf: rfile) (s:stmt) : rfile =
+  let ev (rf: *rfile) (s:stmt) : *rfile =
     match s
     case #f64 v -> set rf ax v
     case #add r -> let v = get rf ax + get rf r in set rf ax v
@@ -68,6 +60,6 @@ module stmt : STMT = {
     case #sto r -> let v = get rf ax in set rf r v
     case #ld r -> let v = get rf r in set rf ax v
 
-  let eval [n] (rf: rfile) (ss:[n]stmt) : rfile =
+  let eval [n] (rf: *rfile) (ss:[n]stmt) : *rfile =
     loop rf for i < n do ev rf ss[i]
 }
