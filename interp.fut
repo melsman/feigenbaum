@@ -7,13 +7,13 @@ module type STMT = {
   val dx : reg
 
   type stmt = #f64 f64
-            | #add reg   -- add r: ax <- ax + r
-            | #sub reg   -- add r: ax <- ax - r
-            | #mul reg   -- mul r: ax <- ax * r
-            | #sin       -- sin  : ax <- sin ax
-            | #cos       -- cos  : ax <- cos ax
-            | #sto reg   -- sto r:   r <- ax
-            | #ld  reg   --  ld r: ax <- r
+            | #add reg   -- add r : ax <- ax + r
+            | #sub reg   -- add r : ax <- ax - r
+            | #mul reg   -- mul r : ax <- ax * r
+            | #sin       -- sin   : ax <- sin ax
+            | #cos       -- cos   : ax <- cos ax
+            | #sto reg   -- sto r :  r <- ax
+            | #ld  reg   --  ld r : ax <- r
 
   type rfile
   val emp : f64 -> rfile
@@ -31,13 +31,13 @@ module stmt : STMT = {
   let dx : reg = #dx
 
   type stmt = #f64 f64
-            | #add reg   -- add r: ax <- ax + r
-            | #sub reg   -- add r: ax <- ax - r
-            | #mul reg   -- mul r: ax <- ax * r
-            | #sin       -- sin  : ax <- sin ax
-            | #cos       -- cos  : ax <- cos ax
-            | #sto reg   -- sto r:   r <- ax
-            | #ld  reg   --  ld r: ax <- r
+            | #add reg   -- add r : ax <- ax + r
+            | #sub reg   -- add r : ax <- ax - r
+            | #mul reg   -- mul r : ax <- ax * r
+            | #sin       -- sin   : ax <- sin ax
+            | #cos       -- cos   : ax <- cos ax
+            | #sto reg   -- sto r :  r <- ax
+            | #ld  reg   --  ld r : ax <- r
 
   type rfile = (f64,f64,f64,f64)
 
