@@ -24,7 +24,7 @@ module lys: lys with text_content = text_content = {
     case #feigen_interp -> "Feigenbaum (Interp)"
 
   let kinds_string = "[Feigenbaum|SinCos|Tent|Gauss|Henon|Feigenbaum (Interp)]"
-  let kind_idx_max : i32 = 4
+  let kind_idx_max : i32 = 5
   let kind_idx (k:kind) : i32 =
     match k
     case #feigen -> 0
