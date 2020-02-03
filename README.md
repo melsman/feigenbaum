@@ -169,3 +169,9 @@ MIT License
 
 [1] List of Chaotic Maps. Wikipedia Article. See
 https://en.wikipedia.org/wiki/List_of_chaotic_maps .
+
+## Test
+
+A test:
+
+<img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
