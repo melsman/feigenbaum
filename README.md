@@ -16,7 +16,7 @@ adjusted using the `u` and `j` keys):
 - **Logistic map**: The Logistic map takes a point *x_n* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
-  _x<sub>(n+1)</sub> = r * x<sub>n</sub> * (1 - x<sub>n</sub>)_
+  _x<sub>(n+1)</sub> = r · x<sub>n</sub> · (1 - x<sub>n</sub>)_
 
   Here *r* is a parameter and in the setup values for *r* (ranging
   between 3.5 and 4.0) constitute values on the horizontal axis of the
@@ -31,9 +31,9 @@ adjusted using the `u` and `j` keys):
   *(x<sub>n</sub>,y<sub>n</sub>)* and computes a new point
   *(x<sub>(n+1)</sub>,y<sub>(n+1)</sub>)* using the equations:
 
-  _x<sub>(n+1)</sub> = sin (x<sub>n</sub> + a * y<sub>n</sub>)_
+  _x<sub>(n+1)</sub> = sin (x<sub>n</sub> + a · y<sub>n</sub>)_
 
-  _y<sub>(n+1)</sub> = cos (b * x<sub>n</sub> + y<sub>n</sub>)_
+  _y<sub>(n+1)</sub> = cos (b · x<sub>n</sub> + y<sub>n</sub>)_
 
   Here *a* and *b* are parameters. The bifurcation diagram uses a
   fixed value of *a* = 2.82 whereas the values for *b* constitute
@@ -64,7 +64,7 @@ adjusted using the `u` and `j` keys):
 - **Gaussian map**: The Gaussian map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
-  _x<sub>(n+1)</sub> = exp(-a · x<sub>n</sub><sup>2</sup>) + b_
+  _x<sub>(n+1)</sub> = exp (-a · x<sub>n</sub><sup>2</sup>) + b_
 
   Here *a* and *b* are parameters. The bifurcation diagram uses a
   fixed value of *a* = 6.2 whereas the values for *b* constitute
