@@ -48,11 +48,11 @@ adjusted using the `u` and `j` keys):
 - **Tent map**: The Tent map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
-  <img src="https://latex.codecogs.com/svg.latex?\Large&space;x_{(n+1)}=u·\mathrm{min}(x_n,1-x_n)" title="Hi" />
+  <!--<img src="https://latex.codecogs.com/svg.latex?\Large&space;x_{(n+1)}=u·\mathrm{min}(x_n,1-x_n)" title="Hi" />-->
 
   _x<sub>(n+1)</sub> = u · min (x<sub>n</sub>, 1-x<sub>n</sub>)_
 
-  Here *u* is a parameter and in the setup values for *u* (ranging
+  Here *u* is a parameter and in the setup, values for *u* (ranging
   between 1.0 and 2.0) constitute values on the horizontal axis of the
   bifurcation diagram. The application uses the initial value
   *x<sub>0</sub>* = 0.1 for the calculation. For different parameters
@@ -170,4 +170,4 @@ https://en.wikipedia.org/wiki/List_of_chaotic_maps .
 
 A test:
 
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+<!--<img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />-->
