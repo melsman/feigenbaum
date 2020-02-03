@@ -48,9 +48,9 @@ adjusted using the `u` and `j` keys):
 - **Tent map**: The Tent map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
-  <img src="https://latex.codecogs.com/svg.latex?\Large&space;x_{(n+1)}=u\dot\mathrm{min}(x_n,1-x_n)" title="Hi" />
+  <img src="https://latex.codecogs.com/svg.latex?\Large&space;x_{(n+1)}=u·\mathrm{min}(x_n,1-x_n)" title="Hi" />
 
-  _x<sub>(n+1)</sub> = u * min (x<sub>n</sub>,1-x<sub>n</sub>)_
+  _x<sub>(n+1)</sub> = u · min (x<sub>n</sub>, 1-x<sub>n</sub>)_
 
   Here *u* is a parameter and in the setup values for *u* (ranging
   between 1.0 and 2.0) constitute values on the horizontal axis of the
@@ -64,7 +64,7 @@ adjusted using the `u` and `j` keys):
 - **Gaussian map**: The Gaussian map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
-  _x<sub>(n+1)</sub> = exp(- a * x<sub>n</sub><sup>2</sup>) + b_
+  _x<sub>(n+1)</sub> = exp(-a · x<sub>n</sub><sup>2</sup>) + b_
 
   Here *a* and *b* are parameters. The bifurcation diagram uses a
   fixed value of *a* = 6.2 whereas the values for *b* constitute
@@ -79,9 +79,9 @@ adjusted using the `u` and `j` keys):
 - **Henon map**: The Henon map takes a point *(x<sub>n</sub>,y<sub>n</sub>)* and computes
   a new point *(x<sub>(n+1)</sub>,y<sub>(n+1)</sub>)* using the equations:
 
-  _x<sub>(n+1)</sub> = 1 - a * x<sub>n</sub><sup>2</sup> + y<sub>n</sub>_
+  _x<sub>(n+1)</sub> = 1 - a · x<sub>n</sub><sup>2</sup> + y<sub>n</sub>_
 
-  _y<sub>(n+1)</sub> = b * x<sub>n</sub>_
+  _y<sub>(n+1)</sub> = b · x<sub>n</sub>_
 
   Here *a* and *b* are parameters. The bifurcation diagram uses a
   fixed value of *b* = 0.3 whereas the values for *a* constitute
