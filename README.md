@@ -24,7 +24,7 @@ equations, which can be altered between, dynamically, using the keys
   bifurcation diagram. The application uses the initial value *x_0* =
   0.25 for the calculation. For different parameters *r*, *x_n* will
   (1) converge towards a particular value, (2) result in an oscillating
-  solution (jumping between multiple different values), or result in
+  solution (jumping between multiple different values), or (3) result in
   chaotic behavior (no repeated patterns).
 
 
@@ -43,7 +43,7 @@ equations, which can be altered between, dynamically, using the keys
   *(x_0,y_0) = (0.1,0.1)* for the calculations. It turns out that for
   different parameters *a* and *b*, *x_n* will (1) converge towards a
   particular value, (2) result in an oscillating solution (jumping
-  between multiple different values), or result in chaotic behavior
+  between multiple different values), or (3) result in chaotic behavior
   (no repeated patterns).
 
 - **Tent map**: The Tent map takes a point *x_n* and computes
@@ -58,7 +58,7 @@ equations, which can be altered between, dynamically, using the keys
   bifurcation diagram. The application uses the initial value *x_0* =
   0.1 for the calculation. For different parameters *u*, *x_n* will
   (1) converge towards a particular value, (2) result in an oscillating
-  solution (jumping between multiple different values), or result in
+  solution (jumping between multiple different values), or (3) result in
   chaotic behavior (no repeated patterns).
 
 - **Gaussian map**: The Gaussian map takes a point *x_n* and computes
@@ -75,7 +75,7 @@ equations, which can be altered between, dynamically, using the keys
   *x_0* = 0.1 for the calculations. It turns out that for
   different parameters *a* and *b*, *x_n* will (1) converge towards a
   particular value, (2) result in an oscillating solution (jumping
-  between multiple different values), or result in chaotic behavior
+  between multiple different values), or (3) result in chaotic behavior
   (no repeated patterns).
 
 - **Henon map**: The Henon map takes a point *(x_n,y_n)* and computes
@@ -93,7 +93,7 @@ equations, which can be altered between, dynamically, using the keys
   *(x_0,y_0) = (0.1,0.1)* for the calculations. It turns out that for
   different parameters *a* and *b*, *x_n* will (1) converge towards a
   particular value, (2) result in an oscillating solution (jumping
-  between multiple different values), or result in chaotic behavior
+  between multiple different values), or (3) result in chaotic behavior
   (no repeated patterns).
 
 - **Logistic map (interpreted)**: This equation is implemented using
