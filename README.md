@@ -3,14 +3,15 @@
 *By Martin Elsman, DIKU*
 
 This application demonstrates the use of
-[Futhark](http://futhark-lang.org) for showing birfucation diagrams
+[Futhark](http://futhark-lang.org) for showing bifurcation diagrams
 for a number of non-linear discrete recurrence examples that
 illustrate chaotic behavior. The application builds on the [Futhark
 Lys Library](https://github.com/diku-dk/lys) and allows for the user
-to zoom and navigate the area of interest (arrow keys, `z`, and
+to navigate and zoom the area of interest (arrow keys, `z`, and
 `x`). Currently, the application supports the following recurrence
 equations, which can be altered between, dynamically, using the keys
-`1`-`6`:
+`1`-`6` (for some of the recurrences, an extra parameter may be
+adjusted using the `u` and `j` keys):
 
 - **Logistic map**: The Logistic map takes a point *x_n* and computes
   a new point *x_{n+1}* using the equation:
@@ -111,7 +112,7 @@ equations, which can be altered between, dynamically, using the keys
 The application is quite easy to extend to cover new equations; see
 the source code for details.
 
-## Building Birfucation Diagrams for Recurrences
+## Building Bifurcation Diagrams for Recurrences
 
 Each supported recurrence system is defined by giving a concrete
 record matching the following type:
@@ -129,10 +130,11 @@ record matching the following type:
        }
 ````
 
-The application creates a frame for drawing many times a second and
-parallelises the work done for each parameter value (the values for
-the horizontal axis specified by the width of the window and the range
-specified by the `p_rng` record field.
+Many times a second, the application creates a frame for drawing. It
+parallelises the work for each parameter value, each of which is
+computed based on the width of the window and the range specified by
+the `p_rng` record field. In other words, the application parallelises
+the work for the columns of the window.
 
 For each parameter value, the application first _warms up the
 recurrence_ by, iteratively (and for each parameter value in
@@ -141,7 +143,8 @@ the first component of the `ns` field) starting with the value
 contained in the `init` field. The application then applies the `next`
 function a number of times (specified by the second component of the
 `ns` field) and records the resulting values for drawing points in the
-frame.
+frame. Again, these computations are done in parallel for all columns
+in the frame.
 
 ## Running it
 

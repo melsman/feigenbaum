@@ -9,40 +9,32 @@
 import "lib/github.com/diku-dk/lys/lys"
 import "interp"
 
-type text_content = (i32, i32, f32, f32, f32, f32, i32)
+type text_content = (i32, i32, f32, f32, f32, f32, f32, i32)
 module lys: lys with text_content = text_content = {
 
-  type kind = #logistic | #sincos f64 | #tent | #gauss f64 | #henon f64 | #logistic_interp
+  type kind = #logistic | #sincos | #tent | #gauss | #henon | #logistic_interp
+  let kinds : []kind = [#logistic,#sincos,#tent,#gauss,#henon,#logistic_interp]
 
   let pp_kind (k:kind) =
     match k
     case #logistic -> "Logistic"
-    case #sincos _ -> "SinCos"
+    case #sincos -> "SinCos"
     case #tent -> "Tent"
-    case #gauss _ -> "Gauss"
-    case #henon _ -> "Henon"
+    case #gauss -> "Gauss"
+    case #henon -> "Henon"
     case #logistic_interp -> "Logistic (Interp)"
-
-  let kinds_string = "[Logistic|SinCos|Tent|Gauss|Henon|Logistic (Interp)]"
-  let kind_idx_max : i32 = 5
-  let kind_idx (k:kind) : i32 =
-    match k
-    case #logistic -> 0
-    case #sincos _ -> 1
-    case #tent -> 2
-    case #gauss _ -> 3
-    case #henon _ -> 4
-    case #logistic_interp -> 5
 
   type^ sysdef 'p =
       {kind: kind,
-       init: p,              -- initial state
-       prj: p -> f64,        -- projection of vertical value
-       next: f64 -> p -> p,  -- parameterised recurrence
-       ns: (i32,i32),        -- pair of warm-up iteration number
-                             -- and hot iteration number (drawing)
-       p_rng: (f32,f32),     -- parameter range (horizontal axis)
-       x_rng: (f32,f32)      -- range of vertical axis
+       init: p,                -- initial state
+       prj: p -> f64,          -- projection of vertical value
+       next: f64 -> p -> p,    -- parameterised recurrence
+       ns: (i32,i32),          -- pair of warm-up iteration number
+                               -- and hot iteration number (drawing)
+       p_rng: (f32,f32),       -- parameter range (horizontal axis)
+       x_rng: (f32,f32),       -- range of vertical axis
+       upd_xtr: f64 -> p -> p, -- update extra parameter
+       xtr: p -> f64           -- extract extra parameter
        }
 
   let sysdef_logistic : sysdef f64 =
@@ -52,17 +44,22 @@ module lys: lys with text_content = text_content = {
      next=\a x -> a*x*(1.0-x),
      ns=(1000, 10000),
      p_rng=(3.5, 4.0),
-     x_rng=(0.0, 1.0)}
+     x_rng=(0.0, 1.0),
+     upd_xtr=\ _ x -> x,
+     xtr=\ _ -> 0.0}
 
-  let sysdef_sincos (a0:f64) : sysdef (f64,f64) =
-    {kind=#sincos a0,
-     init=(0.1, 0.1),
+  let sysdef_sincos : sysdef (f64,f64,f64) =
+    {kind=#sincos,
+     init=(0.1, 0.1, 2.82),
      prj=(.0),
-     next=\b (x,y) -> (f64.sin(x + a0*y),
-		       f64.cos(b*x + y)),
+     next=\b (x,y,a) -> (f64.sin(x + a*y),
+			 f64.cos(b*x + y),
+			 a),
      ns=(1000, 10000),
      p_rng=(0.0, 3.0),
-     x_rng=(-1.0, 1.0)}
+     x_rng=(-1.0, 1.0),
+     upd_xtr=\a (x,y,_) -> (x,y,a),
+     xtr=(.2)}
 
   let sysdef_tent : sysdef f64 =
     {kind=#tent,
@@ -71,26 +68,33 @@ module lys: lys with text_content = text_content = {
      next=\mu x -> mu * f64.min x (1.0 - x),
      ns=(1000, 10000),
      p_rng=(1.0, 2.0),
-     x_rng=(0.0,1.0)}
+     x_rng=(0.0,1.0),
+     upd_xtr=\ _ x -> x,
+     xtr=\ _ -> 0.0}
 
-  let sysdef_gauss (a0:f64) : sysdef f64 =
-    {kind=#gauss a0,
-     init=0.1,
-     prj=\x -> x,
-     next=\b x -> f64.exp(-a0 * x * x) + b,
+  let sysdef_gauss : sysdef (f64,f64) =
+    {kind=#gauss,
+     init=(0.1,6.2),
+     prj=(.0),
+     next=\b (x,a) -> (f64.exp(-a * x * x) + b, a),
      ns=(1000, 10000),
      p_rng=(-1.0, 1.0),
-     x_rng=(-1.0, 1.5)}
+     x_rng=(-1.0, 1.5),
+     upd_xtr=\a (x,_) -> (x,a),
+     xtr=(.1)}
 
-  let sysdef_henon (b0:f64) : sysdef (f64,f64) =
-    {kind=#henon b0,
-     init=(0.1, 0.1),
+  let sysdef_henon : sysdef (f64,f64,f64) =
+    {kind=#henon,
+     init=(0.1, 0.1, 0.3),
      prj=(.0),
-     next=\a (x,y) -> (1.0 - a*x*x + y,
-		       b0 * x),
+     next=\a (x,y,b) -> (1.0 - a*x*x + y,
+			 b * x,
+			 b),
      ns=(1000, 10000),
      p_rng=(1.0, 1.45),
-     x_rng=(-1.5, 1.5)}
+     x_rng=(-1.5, 1.5),
+     upd_xtr=\b (x,y,_) -> (x,y,b),
+     xtr=(.2)}
 
   let sysdef_logistic_interp : sysdef stmt.rfile =
     {kind=#logistic_interp,
@@ -107,9 +111,28 @@ module lys: lys with text_content = text_content = {
 		   in stmt.eval rf ss,
      ns=(1000, 10000),
      p_rng=(3.5, 4.0),
-     x_rng=(0.0, 1.0)}
+     x_rng=(0.0, 1.0),
+     upd_xtr=\ _ x -> x,
+     xtr=\ _ -> 0.0}
 
   -- Internal stuff
+
+  let pp_kinds [n] (ks:[n]kind) =
+    (loop s="[" for i < n do
+       let v = s ++ pp_kind (ks[i])
+       in if i == n-1 then v
+ 	  else v ++ "|")
+    |> (++"]")
+
+  let kinds_string = pp_kinds kinds
+  let kinds_idx_max : i32 = length kinds - 1
+  let kinds_idx (k:kind) : i32 =
+    reduce (\ (k1,i1) (k2,i2) ->
+	      if k1==k then if k2==k then (k,i32.max i1 i2)
+			    else (k1,i1)
+			    else (k2,i2)
+	   ) (k,0) (zip kinds (iota(length(kinds))))
+    |> (.1)
 
   let grab_mouse = false
   let header_height = 55i32
@@ -120,8 +143,9 @@ module lys: lys with text_content = text_content = {
 		n: i32,              -- number of iterations
 		p_rng: (f32, f32),
                 x_rng: (f32, f32),
-                moving: {zoom:i32, horiz:i32, vert:i32},
-                paused: bool
+                moving: {zoom:i32, horiz:i32, vert:i32, xtr:i32},
+                paused: bool,
+		xtr: f64
                }
 
   let mk_init 'a (sd: sysdef a) (h:i32) (w:i32) : state =
@@ -131,14 +155,15 @@ module lys: lys with text_content = text_content = {
      n=sd.ns.1,
      p_rng=sd.p_rng,
      x_rng=sd.x_rng,
-     moving={zoom=0,horiz=0,vert=0},
-     paused=false}
+     moving={zoom=0,horiz=0,vert=0,xtr=0},
+     paused=false,
+     xtr=sd.xtr(sd.init)}
 
   let init_logistic : i32 -> i32 -> state = mk_init sysdef_logistic
-  let init_sincos : i32 -> i32 -> state = mk_init (sysdef_sincos 2.82)
+  let init_sincos : i32 -> i32 -> state = mk_init sysdef_sincos
   let init_tent   : i32 -> i32 -> state = mk_init sysdef_tent
-  let init_gauss  : i32 -> i32 -> state = mk_init (sysdef_gauss 6.2)
-  let init_henon  : i32 -> i32 -> state = mk_init (sysdef_henon 0.3)
+  let init_gauss  : i32 -> i32 -> state = mk_init sysdef_gauss
+  let init_henon  : i32 -> i32 -> state = mk_init sysdef_henon
   let init_logistic_interp : i32 -> i32 -> state = mk_init sysdef_logistic_interp
 
   let init (_seed: u32) (h: i32) (w: i32) : state =
@@ -154,6 +179,8 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_DOWN then s with moving.vert = 1
     else if key == SDLK_z then s with moving.zoom = 1
     else if key == SDLK_x then s with moving.zoom = -1
+    else if key == SDLK_u then s with moving.xtr = 1
+    else if key == SDLK_j then s with moving.xtr = -1
     else if key == SDLK_SPACE then s with paused = !s.paused
     else if key == SDLK_1 then init_logistic s.h s.w
     else if key == SDLK_2 then init_sincos s.h s.w
@@ -170,9 +197,11 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_DOWN then s with moving.vert = 0
     else if key == SDLK_z then s with moving.zoom = 0
     else if key == SDLK_x then s with moving.zoom = 0
+    else if key == SDLK_u then s with moving.xtr = 0
+    else if key == SDLK_j then s with moving.xtr = 0
     else s
 
-  let event (e: event) (s: state) =
+  let event (e: event) (s: state) : state =
     match e
     case #step td ->
       let norma (v:f32) : f32 =
@@ -185,13 +214,16 @@ module lys: lys with text_content = text_content = {
       let ar2 =                                    -- zoom horiz in/out
 	let da = norma(td*r32(s.moving.zoom))
 	in (ar.0 + da, ar.1 - da)
-	let xr =                                   -- move up/down
+      let xr =                                   -- move up/down
 	  let dx = normx(td*r32(s.moving.vert))
 	  in (s.x_rng.0 + dx,	s.x_rng.1 + dx)
       let xr2 =                                    -- zoom vert in/out
 	let dx = normx(td*r32(s.moving.zoom))
 	in (xr.0 + dx, xr.1 - dx)
-      in s with p_rng = ar2 with x_rng = xr2
+      in s with p_rng = ar2
+           with x_rng = xr2
+           with xtr = s.xtr + f64.f32 td * r64(s.moving.xtr) / 25.0
+
     case #keydown {key} -> keydown key s
     case #keyup {key} -> keyup key s
     case #mouse _ -> s
@@ -201,7 +233,7 @@ module lys: lys with text_content = text_content = {
                      (s:state) (h:i32) (v:i32) : [h]argb.colour =
     let a = f64.f32 s.p_rng.0 + r64 v * f64.f32(s.p_rng.1-s.p_rng.0)/ r64 s.w
     let nxt (x:p) : p = sd.next a x
-    let x : p = loop x=sd.init for _i < s.n0 do nxt x
+    let x : p = loop x=sd.upd_xtr s.xtr sd.init for _i < s.n0 do nxt x
     let counts = replicate h 0
     let nz = 0
     let hits = 1
@@ -230,10 +262,10 @@ module lys: lys with text_content = text_content = {
   let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
     match s.kind
     case #logistic -> gen_column0 sysdef_logistic s h v
-    case #sincos a0 -> gen_column0 (sysdef_sincos a0) s h v
+    case #sincos -> gen_column0 sysdef_sincos s h v
     case #tent -> gen_column0 sysdef_tent s h v
-    case #gauss a0 -> gen_column0 (sysdef_gauss a0) s h v
-    case #henon b0 -> gen_column0 (sysdef_henon b0) s h v
+    case #gauss -> gen_column0 sysdef_gauss s h v
+    case #henon -> gen_column0 sysdef_henon s h v
     case #logistic_interp -> gen_column0 sysdef_logistic_interp s h v
 
   let render (s: state) =
@@ -245,12 +277,13 @@ module lys: lys with text_content = text_content = {
 
   let text_format () =
     "FPS: %d | Kind: %" ++ kinds_string ++
-    " | X-range: (%f, %f) | Y-range: (%f,%f)\nControls: z/x (zoom), arrows (move), 1-%d (kinds), esc (quit)"
+    " | X-range: (%f, %f) | Y-range: (%f,%f) | Xtr: %f\nControls: z/x (zoom), arrows (move), 1-%d (kinds), u/j (Xtr incr/decr), esc (quit)"
 
   let text_content (render_duration: f32) (s: state): text_content =
-    (t32 render_duration, kind_idx s.kind,
+    (t32 render_duration, kinds_idx s.kind,
      s.p_rng.0, s.p_rng.1,
-     s.x_rng.0, s.x_rng.1, kind_idx_max+1)
+     s.x_rng.0, s.x_rng.1,
+     f32.f64(s.xtr), kinds_idx_max+1)
 
   let text_colour = const argb.black
 }
