@@ -12,39 +12,41 @@ import "interp"
 type text_content = (i32, i32, f32, f32, f32, f32, i32)
 module lys: lys with text_content = text_content = {
 
-  type kind = #feigen | #sincos f64 | #tent | #gauss f64 | #henon f64 | #feigen_interp
+  type kind = #logistic | #sincos f64 | #tent | #gauss f64 | #henon f64 | #logistic_interp
 
   let pp_kind (k:kind) =
     match k
-    case #feigen -> "Feigenbaum"
+    case #logistic -> "Logistic"
     case #sincos _ -> "SinCos"
     case #tent -> "Tent"
     case #gauss _ -> "Gauss"
     case #henon _ -> "Henon"
-    case #feigen_interp -> "Feigenbaum (Interp)"
+    case #logistic_interp -> "Logistic (Interp)"
 
-  let kinds_string = "[Feigenbaum|SinCos|Tent|Gauss|Henon|Feigenbaum (Interp)]"
+  let kinds_string = "[Logistic|SinCos|Tent|Gauss|Henon|Logistic (Interp)]"
   let kind_idx_max : i32 = 5
   let kind_idx (k:kind) : i32 =
     match k
-    case #feigen -> 0
+    case #logistic -> 0
     case #sincos _ -> 1
     case #tent -> 2
     case #gauss _ -> 3
     case #henon _ -> 4
-    case #feigen_interp -> 5
+    case #logistic_interp -> 5
 
-  type^ sysdef 'p = {kind: kind,
-                     init: p,
-		     prj: p -> f64,
-		     next: f64 -> p -> p,
-		     ns: (i32,i32),
-		     p_rng: (f32,f32),
-		     x_rng: (f32,f32)
-		   }
+  type^ sysdef 'p =
+      {kind: kind,
+       init: p,              -- initial state
+       prj: p -> f64,        -- projection of vertical value
+       next: f64 -> p -> p,  -- parameterised recurrence
+       ns: (i32,i32),        -- pair of warm-up iteration number
+                             -- and hot iteration number (drawing)
+       p_rng: (f32,f32),     -- parameter range (horizontal axis)
+       x_rng: (f32,f32)      -- range of vertical axis
+       }
 
-  let sysdef_feigen : sysdef f64 =
-    {kind=#feigen,
+  let sysdef_logistic : sysdef f64 =
+    {kind=#logistic,
      init=0.25,
      prj=\x -> x,
      next=\a x -> a*x*(1.0-x),
@@ -90,8 +92,8 @@ module lys: lys with text_content = text_content = {
      p_rng=(1.0, 1.45),
      x_rng=(-1.5, 1.5)}
 
-  let sysdef_feigen_interp : sysdef stmt.rfile =
-    {kind=#feigen_interp,
+  let sysdef_logistic_interp : sysdef stmt.rfile =
+    {kind=#logistic_interp,
      init=stmt.set (stmt.emp 0.0) stmt.ax 0.25,
      prj=\rf -> stmt.get rf stmt.ax,
      next=\a rf -> let ss = stmt.([#sto bx,       -- bx <- ax
@@ -132,15 +134,15 @@ module lys: lys with text_content = text_content = {
      moving={zoom=0,horiz=0,vert=0},
      paused=false}
 
-  let init_feigen : i32 -> i32 -> state = mk_init sysdef_feigen
+  let init_logistic : i32 -> i32 -> state = mk_init sysdef_logistic
   let init_sincos : i32 -> i32 -> state = mk_init (sysdef_sincos 2.82)
   let init_tent   : i32 -> i32 -> state = mk_init sysdef_tent
   let init_gauss  : i32 -> i32 -> state = mk_init (sysdef_gauss 6.2)
   let init_henon  : i32 -> i32 -> state = mk_init (sysdef_henon 0.3)
-  let init_feigen_interp : i32 -> i32 -> state = mk_init sysdef_feigen_interp
+  let init_logistic_interp : i32 -> i32 -> state = mk_init sysdef_logistic_interp
 
   let init (_seed: u32) (h: i32) (w: i32) : state =
-    init_feigen (h-header_height) w
+    init_logistic (h-header_height) w
 
   let resize (h: i32) (w: i32) (s: state) =
     s with h = h-header_height with w = w
@@ -153,12 +155,12 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_z then s with moving.zoom = 1
     else if key == SDLK_x then s with moving.zoom = -1
     else if key == SDLK_SPACE then s with paused = !s.paused
-    else if key == SDLK_1 then init_feigen s.h s.w
+    else if key == SDLK_1 then init_logistic s.h s.w
     else if key == SDLK_2 then init_sincos s.h s.w
     else if key == SDLK_3 then init_tent s.h s.w
     else if key == SDLK_4 then init_gauss s.h s.w
     else if key == SDLK_5 then init_henon s.h s.w
-    else if key == SDLK_6 then init_feigen_interp s.h s.w
+    else if key == SDLK_6 then init_logistic_interp s.h s.w
     else s
 
   let keyup (key: i32) (s: state) =
@@ -227,12 +229,12 @@ module lys: lys with text_content = text_content = {
 
   let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
     match s.kind
-    case #feigen -> gen_column0 sysdef_feigen s h v
+    case #logistic -> gen_column0 sysdef_logistic s h v
     case #sincos a0 -> gen_column0 (sysdef_sincos a0) s h v
     case #tent -> gen_column0 sysdef_tent s h v
     case #gauss a0 -> gen_column0 (sysdef_gauss a0) s h v
     case #henon b0 -> gen_column0 (sysdef_henon b0) s h v
-    case #feigen_interp -> gen_column0 sysdef_feigen_interp s h v
+    case #logistic_interp -> gen_column0 sysdef_logistic_interp s h v
 
   let render (s: state) =
     map (\x -> (replicate header_height argb.white ++

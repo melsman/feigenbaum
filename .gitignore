@@ -1,6 +1,9 @@
+*~
+lib
+interp.c
+interp.h
 feigenbaum
 feigenbaum_printf.h
 feigenbaum_wrapper.c
 feigenbaum_wrapper.h
 feigenbaum_wrapper.o
-lib
