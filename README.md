@@ -13,7 +13,8 @@ equations, which can be altered between, dynamically, using the keys
 `1`-`6` (for some of the recurrences, an extra parameter may be
 adjusted using the `u` and `j` keys):
 
-<img src="images/bif_logistic.png" border="2" width="200" align="right">
+<img src="images/bif_logistic.png" border="2" width="250" align="right">
+
 - **Logistic map**: The Logistic map takes a point *x_n* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
@@ -28,7 +29,8 @@ adjusted using the `u` and `j` keys):
   chaotic behavior (no repeated patterns).
 
 
-  <img src="images/bif_sincos.png" border="2" width="200" align="right">
+  <img src="images/bif_sincos.png" border="2" width="250" align="right">
+
 - **SinCos map**: The SinCos map takes a point
   *(x<sub>n</sub>,y<sub>n</sub>)* and computes a new point
   *(x<sub>(n+1)</sub>,y<sub>(n+1)</sub>)* using the equations:
@@ -47,7 +49,8 @@ adjusted using the `u` and `j` keys):
   oscillating solution (jumping between multiple different values), or
   (3) result in chaotic behavior (no repeated patterns).
 
-  <img src="images/bif_tent.png" border="2" width="200" align="right">
+  <img src="images/bif_tent.png" border="2" width="250" align="right">
+
 - **Tent map**: The Tent map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
@@ -64,7 +67,8 @@ adjusted using the `u` and `j` keys):
   different values), or (3) result in chaotic behavior (no repeated
   patterns).
 
-  <img src="images/bif_gauss.png" border="2" width="200" align="right">
+  <img src="images/bif_gauss.png" border="2" width="250" align="right">
+
 - **Gaussian map**: The Gaussian map takes a point *x<sub>n</sub>* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
 
@@ -80,7 +84,8 @@ adjusted using the `u` and `j` keys):
   (jumping between multiple different values), or (3) result in
   chaotic behavior (no repeated patterns).
 
-  <img src="images/bif_henon.png" border="2" width="200" align="right">
+  <img src="images/bif_henon.png" border="2" width="250" align="right">
+
 - **Henon map**: The Henon map takes a point *(x<sub>n</sub>,y<sub>n</sub>)* and computes
   a new point *(x<sub>(n+1)</sub>,y<sub>(n+1)</sub>)* using the equations:
 
@@ -98,7 +103,8 @@ adjusted using the `u` and `j` keys):
   oscillating solution (jumping between multiple different values), or
   (3) result in chaotic behavior (no repeated patterns).
 
-  <img src="images/bif_logistic_interp.png" border="2" width="200" align="right">
+  <img src="images/bif_logistic_interp.png" border="2" width="250" align="right">
+
 - **Logistic map (interpreted)**: This equation is implemented using
   an interpreted approach where the equation is implemented using a
   sequence of register file instructions that are executed by a simple
