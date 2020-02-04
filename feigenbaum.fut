@@ -9,7 +9,7 @@
 import "lib/github.com/diku-dk/lys/lys"
 import "interp"
 
-type text_content = (i32, i32, f32, f32, f32, f32, f32, i32)
+type text_content = (i32, i32, f32, f32, f32, f32, f32, i32, i32)
 module lys: lys with text_content = text_content = {
 
   type kind = #logistic | #sincos | #tent | #gauss | #henon | #logistic_interp
@@ -117,6 +117,37 @@ module lys: lys with text_content = text_content = {
 
   -- Internal stuff
 
+  -- colour schemes
+  module colour_scheme : {
+    type t
+    val init : t
+    val next : t -> t
+    val swap 'a : t -> (a,a,a) -> (a,a,a)
+    val adjust : t -> (f32,f32,f32) -> (f32,f32,f32)
+    val to_i32 : t -> i32  -- for pretty printing
+  } = {
+    type t = i32
+    let init = 0i32
+    let max = 7i32
+    let next (cs:t) : t =
+      (cs + 1) % (max+1)
+    let swap (cs:t) (r,g,b) =
+      if cs == 0 then (r,g,b)
+      else if cs == 1 then (r,b,g)
+      else if cs == 2 then (g,r,b)
+      else if cs == 3 then (g,b,r)
+      else if cs == 4 then (b,r,g)
+      else (b,g,r)
+    let adjust (cs:t) (h:f32,s:f32,l:f32) : (f32,f32,f32) =
+      if cs == 2 then      (0.50 * h,        s,        l)
+      else if cs == 3 then (1.25 * h,        s,        l)
+      else if cs == 5 then (       h, 1.25 * s,        l)
+      else if cs == 6 then (0.80 * h, 0.80 * s, 0.80 * l)
+      else if cs == 7 then (0.80 * h, 1.25 * s, 1.25 * l)
+      else                 (       h,        s,        l)
+    let to_i32 (x:t) = x
+  }
+
   let pp_kinds [n] (ks:[n]kind) =
     (loop s="[" for i < n do
        let v = s ++ pp_kind (ks[i])
@@ -145,7 +176,8 @@ module lys: lys with text_content = text_content = {
                 x_rng: (f32, f32),
                 moving: {zoom:i32, horiz:i32, vert:i32, xtr:i32},
                 paused: bool,
-		xtr: f64
+		xtr: f64,
+		colour_scheme : colour_scheme.t
                }
 
   let mk_init 'a (sd: sysdef a) (h:i32) (w:i32) : state =
@@ -157,7 +189,8 @@ module lys: lys with text_content = text_content = {
      x_rng=sd.x_rng,
      moving={zoom=0,horiz=0,vert=0,xtr=0},
      paused=false,
-     xtr=sd.xtr(sd.init)}
+     xtr=sd.xtr(sd.init),
+     colour_scheme = colour_scheme.init}
 
   let init_logistic : i32 -> i32 -> state = mk_init sysdef_logistic
   let init_sincos : i32 -> i32 -> state = mk_init sysdef_sincos
@@ -181,6 +214,7 @@ module lys: lys with text_content = text_content = {
     else if key == SDLK_x then s with moving.zoom = -1
     else if key == SDLK_u then s with moving.xtr = 1
     else if key == SDLK_j then s with moving.xtr = -1
+    else if key == SDLK_c then s with colour_scheme = colour_scheme.next s.colour_scheme
     else if key == SDLK_SPACE then s with paused = !s.paused
     else if key == SDLK_1 then init_logistic s.h s.w
     else if key == SDLK_2 then init_sincos s.h s.w
@@ -230,36 +264,36 @@ module lys: lys with text_content = text_content = {
     case #wheel _ -> s
 
   let gen_column0 'p (sd:sysdef p)
-                     (s:state) (h:i32) (v:i32) : [h]argb.colour =
+                     (s:state) (h:i32) (v:i32) : [h]i32 =
     let a = f64.f32 s.p_rng.0 + r64 v * f64.f32(s.p_rng.1-s.p_rng.0)/ r64 s.w
     let nxt (x:p) : p = sd.next a x
     let x : p = loop x=sd.upd_xtr s.xtr sd.init for _i < s.n0 do nxt x
     let counts = replicate h 0
     let nz = 0
     let hits = 1
-    let (_,counts,nz,hits) =
+    let (_,counts,_nz,_hits) =
       unsafe
       loop (x,counts,nz,hits) for _i < s.n do
         let x' = nxt x
 	let i : i32 = i32.f64((sd.prj x' - f64.f32 s.x_rng.0)
 			      / f64.f32 (s.x_rng.1-s.x_rng.0) * r64 s.h)
 	let (counts,nz,hits) = if i >= s.h || i < 0 then (counts,nz,hits)
-			       else let nz = if counts[i] == 0 then nz + 1 else nz
-				    let hits = hits + 1
+			       else let nz : i32 = if counts[i] == 0 then nz + 1 else nz
+				    let hits : i32 = hits + 1
 				    let counts[i] = counts[i] + 1
   				    in (counts,nz,hits)
         in (x',counts,nz,hits)
-    let cs = map (\c -> let c' = c * nz in if c' > hits then hits else c') counts
-    let fs = map (\c -> r32 c / r32 hits) cs
-    let col = map (\f ->
-		     let r = r32 v / r32 s.h
-		     let b = 1.0 - r
-		     let g = (r + b) / 2.0f32
-		     in argb.from_rgba (1.0-r*f) (1.0-g*f) (1.0-b*f) 1.0) fs
-    in col
+    -- let cs = map (\c -> let c' = c * nz in if c' > hits then hits else c') counts
+    -- let fs = map (\c -> r32 c / r32 hits) cs
+    -- let col = map (\f ->
+    -- 		     let r = r32 v / r32 s.h
+    -- 		     let b = 1.0 - r
+    -- 		     let g = (r + b) / 2.0f32
+    -- 		     in argb.from_rgba (1.0-r*f) (1.0-g*f) (1.0-b*f) 1.0) fs
+    in counts
     |> reverse
 
-  let gen_column (s:state) (h:i32) (v:i32) : [h]argb.colour =
+  let gen_column (s:state) (h:i32) (v:i32) : [h]i32 =
     match s.kind
     case #logistic -> gen_column0 sysdef_logistic s h v
     case #sincos -> gen_column0 sysdef_sincos s h v
@@ -268,22 +302,66 @@ module lys: lys with text_content = text_content = {
     case #henon -> gen_column0 sysdef_henon s h v
     case #logistic_interp -> gen_column0 sysdef_logistic_interp s h v
 
+  let hsl_value (n1: f32) (n2: f32) (hue: f32): f32 =
+    let hue' = if hue > 6.0
+               then hue - 6.0
+               else if hue < 0.0
+               then hue + 6.0
+               else hue
+    in if hue' < 1.0
+       then n1 + (n2 - n1) * hue'
+       else if hue' < 3.0
+       then n2
+       else if hue' < 4.0
+       then n1 + (n2 - n1) * (4.0 - hue')
+       else n1
+
+  let hsl_to_rgb (h: f32) (s: f32) (l: f32): (f32, f32, f32) =
+    if s == 0.0
+    then (l, l, l)
+    else let m2 = if l <= 0.5
+                  then l * (1.0 + s)
+                  else l + s - l * s
+	 let m1 = 2.0 * l - m2
+	 let r = hsl_value m1 m2 (h * 6.0 + 2.0)
+	 let g = hsl_value m1 m2 (h * 6.0)
+	 let b = hsl_value m1 m2 (h * 6.0 - 2.0)
+	 in (r, g, b)
+
+  let mapi [n] 'a 'b (f:a->i32->b) (xs:[n]a) : [n]b =
+    let xsi = zip xs (iota n)
+    in map (\(x,i) -> f x i) xsi
+
+  let colourise (st:state) (h:i32) (w:i32) (frame: [h][w]i32) : [h][w]argb.colour =
+    let m = reduce i32.max 0 (flatten frame)
+        -- colours are between 0 (white) and 256*256*256-1 (black)
+
+    let f = map (mapi (\c i ->
+			if c == 0 then argb.white
+			else let (h,s,l) = (0.5 + r32 c / r32 m, 0.5, 0.2 + 0.5 * r32 i/r32 w)
+		                           |> colour_scheme.adjust st.colour_scheme
+		             let (r,g,b) = hsl_to_rgb h s l
+			                   |> colour_scheme.swap st.colour_scheme
+			     in argb.from_rgba r g b 1.0)) frame
+    in f
+
   let render (s: state) =
-    map (\x -> (replicate header_height argb.white ++
+    map (\x -> (replicate header_height 0 ++
 		gen_column s s.h x)) (iota s.w)
     |> transpose
+    |> (colourise s (s.h + header_height) s.w)
 
   type text_content = text_content
 
   let text_format () =
     "FPS: %d | Kind: %" ++ kinds_string ++
-    " | X-range: (%f, %f) | Y-range: (%f,%f) | Xtr: %f\nControls: z/x (zoom), arrows (move), 1-%d (kinds), u/j (Xtr incr/decr), esc (quit)"
+    " | X-range: (%.2f, %.2f) | Y-range: (%.2f,%.2f) | Xtr: %.2f | Color: %d\nControls: z/x (zoom), arrows (move), 1-%d (kinds), u/j (Xtr incr/decr), c (color toggle), esc (quit)"
 
   let text_content (render_duration: f32) (s: state): text_content =
     (t32 render_duration, kinds_idx s.kind,
      s.p_rng.0, s.p_rng.1,
      s.x_rng.0, s.x_rng.1,
-     f32.f64(s.xtr), kinds_idx_max+1)
+     f32.f64(s.xtr), colour_scheme.to_i32 s.colour_scheme,kinds_idx_max+1)
 
   let text_colour = const argb.black
 }

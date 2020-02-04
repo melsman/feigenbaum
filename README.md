@@ -15,6 +15,7 @@ adjusted using the `u` and `j` keys):
 
 - **Logistic map**: The Logistic map takes a point *x_n* and computes
   a new point *x<sub>(n+1)</sub>* using the equation:
+  <img src="images/bif_logistic.png" border="2" width="200" align="right">
 
   _x<sub>(n+1)</sub> = r · x<sub>n</sub> · (1 - x<sub>n</sub>)_
 
@@ -30,6 +31,7 @@ adjusted using the `u` and `j` keys):
 - **SinCos map**: The SinCos map takes a point
   *(x<sub>n</sub>,y<sub>n</sub>)* and computes a new point
   *(x<sub>(n+1)</sub>,y<sub>(n+1)</sub>)* using the equations:
+  <img src="images/bif_sincos.png" border="2" width="200" align="right">
 
   _x<sub>(n+1)</sub> = sin (x<sub>n</sub> + a · y<sub>n</sub>)_
 
@@ -158,16 +160,11 @@ $ ./feigenbaum -i
 
 ## Copyright and License
 
-Copyright (c) Martin Elsman
+Copyright (c) Martin Elsman, DIKU
+
 MIT License
 
 ## References
 
 [1] List of Chaotic Maps. Wikipedia Article. See
 https://en.wikipedia.org/wiki/List_of_chaotic_maps .
-
-## Test
-
-A test:
-
-<!--<img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />-->
