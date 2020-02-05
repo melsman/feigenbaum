@@ -157,12 +157,15 @@ module lys: lys with text_content = text_content = {
 
   let kinds_string = pp_kinds kinds
   let kinds_idx_max : i32 = length kinds - 1
+
+  let indices [n] 't (_: [n]t) = iota n
+
   let kinds_idx (k:kind) : i32 =
     reduce (\ (k1,i1) (k2,i2) ->
 	      if k1==k then if k2==k then (k,i32.max i1 i2)
 			    else (k1,i1)
 			    else (k2,i2)
-	   ) (k,0) (zip kinds (iota(length(kinds))))
+	   ) (k,0) (zip kinds (indices kinds))
     |> (.1)
 
   let grab_mouse = false
@@ -346,10 +349,12 @@ module lys: lys with text_content = text_content = {
     in f
 
   let render (s: state) =
+    let h = header_height + s.h in
     map (\x -> (replicate header_height 0 ++
-		gen_column s s.h x)) (iota s.w)
+		          gen_column s s.h x) :> [h]argb.colour)
+        (iota s.w)
     |> transpose
-    |> (colourise s (s.h + header_height) s.w)
+    |> (colourise s h s.w)
 
   type text_content = text_content
 
