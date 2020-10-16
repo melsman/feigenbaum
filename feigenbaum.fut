@@ -156,22 +156,22 @@ module lys: lys with text_content = text_content = {
     |> (++"]")
 
   let kinds_string = pp_kinds kinds
-  let kinds_idx_max : i32 = length kinds - 1
+  let kinds_idx_max : i64 = length kinds - 1
 
   let indices [n] 't (_: [n]t) = iota n
 
-  let kinds_idx (k:kind) : i32 =
+  let kinds_idx (k:kind) : i64 =
     reduce (\ (k1,i1) (k2,i2) ->
-	      if k1==k then if k2==k then (k,i32.max i1 i2)
+	      if k1==k then if k2==k then (k,i64.max i1 i2)
 			    else (k1,i1)
 			    else (k2,i2)
 	   ) (k,0) (zip kinds (indices kinds))
     |> (.1)
 
   let grab_mouse = false
-  let header_height = 55i32
+  let header_height = 55i64
 
-  type state = {h: i32, w: i32,      -- window height and width
+  type state = {h: i64, w: i64,      -- window height and width
 		kind: kind,
 		n0: i32,             -- warmup iterations
 		n: i32,              -- number of iterations
@@ -183,7 +183,7 @@ module lys: lys with text_content = text_content = {
 		colour_scheme : colour_scheme.t
                }
 
-  let mk_init 'a (sd: sysdef a) (h:i32) (w:i32) : state =
+  let mk_init 'a (sd: sysdef a) (h:i64) (w:i64) : state =
     {h,w,
      kind=sd.kind,
      n0=sd.ns.0,
@@ -195,17 +195,17 @@ module lys: lys with text_content = text_content = {
      xtr=sd.xtr(sd.init),
      colour_scheme = colour_scheme.init}
 
-  let init_logistic : i32 -> i32 -> state = mk_init sysdef_logistic
-  let init_sincos : i32 -> i32 -> state = mk_init sysdef_sincos
-  let init_tent   : i32 -> i32 -> state = mk_init sysdef_tent
-  let init_gauss  : i32 -> i32 -> state = mk_init sysdef_gauss
-  let init_henon  : i32 -> i32 -> state = mk_init sysdef_henon
-  let init_logistic_interp : i32 -> i32 -> state = mk_init sysdef_logistic_interp
+  let init_logistic : i64 -> i64 -> state = mk_init sysdef_logistic
+  let init_sincos : i64 -> i64 -> state = mk_init sysdef_sincos
+  let init_tent   : i64 -> i64 -> state = mk_init sysdef_tent
+  let init_gauss  : i64 -> i64 -> state = mk_init sysdef_gauss
+  let init_henon  : i64 -> i64 -> state = mk_init sysdef_henon
+  let init_logistic_interp : i64 -> i64 -> state = mk_init sysdef_logistic_interp
 
-  let init (_seed: u32) (h: i32) (w: i32) : state =
+  let init (_seed: u32) (h: i64) (w: i64) : state =
     init_logistic (h-header_height) w
 
-  let resize (h: i32) (w: i32) (s: state) =
+  let resize (h: i64) (w: i64) (s: state) =
     s with h = h-header_height with w = w
 
   let keydown (key: i32) (s: state) =
@@ -267,19 +267,18 @@ module lys: lys with text_content = text_content = {
     case #wheel _ -> s
 
   let gen_column0 'p (sd:sysdef p)
-                     (s:state) (h:i32) (v:i32) : [h]i32 =
-    let a = f64.f32 s.p_rng.0 + r64 v * f64.f32(s.p_rng.1-s.p_rng.0)/ r64 s.w
+                     (s:state) (h:i64) (v:i32) : [h]i32 =
+    let a = f64.f32 s.p_rng.0 + r64 v * f64.f32(s.p_rng.1-s.p_rng.0)/ f64.i64 s.w
     let nxt (x:p) : p = sd.next a x
     let x : p = loop x=sd.upd_xtr s.xtr sd.init for _i < s.n0 do nxt x
     let counts = replicate h 0
     let nz = 0
     let hits = 1
     let (_,counts,_nz,_hits) =
-      unsafe
       loop (x,counts,nz,hits) for _i < s.n do
         let x' = nxt x
-	let i : i32 = i32.f64((sd.prj x' - f64.f32 s.x_rng.0)
-			      / f64.f32 (s.x_rng.1-s.x_rng.0) * r64 s.h)
+	let i = i64.f64((sd.prj x' - f64.f32 s.x_rng.0)
+			/ f64.f32 (s.x_rng.1-s.x_rng.0) * f64.i64 s.h)
 	let (counts,nz,hits) = if i >= s.h || i < 0 then (counts,nz,hits)
 			       else let nz : i32 = if counts[i] == 0 then nz + 1 else nz
 				    let hits : i32 = hits + 1
@@ -296,7 +295,7 @@ module lys: lys with text_content = text_content = {
     in counts
     |> reverse
 
-  let gen_column (s:state) (h:i32) (v:i32) : [h]i32 =
+  let gen_column (s:state) (h:i64) (v:i32) : [h]i32 =
     match s.kind
     case #logistic -> gen_column0 sysdef_logistic s h v
     case #sincos -> gen_column0 sysdef_sincos s h v
@@ -331,17 +330,17 @@ module lys: lys with text_content = text_content = {
 	 let b = hsl_value m1 m2 (h * 6.0 - 2.0)
 	 in (r, g, b)
 
-  let mapi [n] 'a 'b (f:a->i32->b) (xs:[n]a) : [n]b =
+  let mapi [n] 'a 'b (f:a->i64->b) (xs:[n]a) : [n]b =
     let xsi = zip xs (iota n)
     in map (\(x,i) -> f x i) xsi
 
-  let colourise (st:state) (h:i32) (w:i32) (frame: [h][w]i32) : [h][w]argb.colour =
+  let colourise (st:state) (h:i64) (w:i64) (frame: [h][w]i32) : [h][w]argb.colour =
     let m = reduce i32.max 0 (flatten frame)
         -- colours are between 0 (white) and 256*256*256-1 (black)
 
     let f = map (mapi (\c i ->
 			if c == 0 then argb.white
-			else let (h,s,l) = (0.5 + r32 c / r32 m, 0.5, 0.2 + 0.5 * r32 i/r32 w)
+			else let (h,s,l) = (0.5 + r32 c / r32 m, 0.5, 0.2 + 0.5 * f32.i64 i/f32.i64 w)
 		                           |> colour_scheme.adjust st.colour_scheme
 		             let (r,g,b) = hsl_to_rgb h s l
 			                   |> colour_scheme.swap st.colour_scheme
@@ -350,8 +349,7 @@ module lys: lys with text_content = text_content = {
 
   let render (s: state) =
     let h = header_height + s.h in
-    map (\x -> (replicate header_height 0 ++
-		          gen_column s s.h x) :> [h]argb.colour)
+    map (\x -> concat_to h (replicate header_height 0) (gen_column s s.h (i32.i64 x)))
         (iota s.w)
     |> transpose
     |> (colourise s h s.w)
@@ -363,10 +361,10 @@ module lys: lys with text_content = text_content = {
     " | X-range: (%.2f, %.2f) | Y-range: (%.2f,%.2f) | Xtr: %.2f | Color: %d\nControls: z/x (zoom), arrows (move), 1-%d (kinds), u/j (Xtr incr/decr), c (color toggle), esc (quit)"
 
   let text_content (render_duration: f32) (s: state): text_content =
-    (t32 render_duration, kinds_idx s.kind,
+    (t32 render_duration, i32.i64 (kinds_idx s.kind),
      s.p_rng.0, s.p_rng.1,
      s.x_rng.0, s.x_rng.1,
-     f32.f64(s.xtr), colour_scheme.to_i32 s.colour_scheme,kinds_idx_max+1)
+     f32.f64(s.xtr), colour_scheme.to_i32 s.colour_scheme,i32.i64 (kinds_idx_max+1))
 
   let text_colour = const argb.black
 }
