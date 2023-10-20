@@ -334,7 +334,7 @@ module lys: lys with text_content = text_content = {
     let xsi = zip xs (iota n)
     in map (\(x,i) -> f x i) xsi
 
-  let colourise (st:state) (h:i64) (w:i64) (frame: [h][w]i32) : [h][w]argb.colour =
+  let colourise [h][w] (st:state) (frame: [h][w]i32) : [h][w]argb.colour =
     let m = reduce i32.max 0 (flatten frame)
         -- colours are between 0 (white) and 256*256*256-1 (black)
 
@@ -348,11 +348,10 @@ module lys: lys with text_content = text_content = {
     in f
 
   let render (s: state) =
-    let h = header_height + s.h in
-    map (\x -> concat_to h (replicate header_height 0) (gen_column s s.h (i32.i64 x)))
+    map (\x -> replicate header_height 0 ++ gen_column s s.h (i32.i64 x))
         (iota s.w)
     |> transpose
-    |> (colourise s h s.w)
+    |> colourise s
 
   type text_content = text_content
 
